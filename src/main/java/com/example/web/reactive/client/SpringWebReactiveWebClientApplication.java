@@ -1,7 +1,7 @@
 package com.example.web.reactive.client;
 
 import com.example.web.reactive.client.model.Person;
-import java.time.Duration;
+import com.example.web.reactive.client.proxy.PersonServiceProxy;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -35,9 +35,10 @@ public class SpringWebReactiveWebClientApplication {
   }
 
   @Bean
-  public CommandLineRunner commandLineRunner(final WebClient webClient) {
+  public CommandLineRunner commandLineRunner(
+      final WebClient webClient, final PersonServiceProxy proxy) {
     return (String[] args) -> {
-      getPersons(webClient);
+      proxy.getAll().subscribe(System.out::println);
 
       waitForSomeTime();
 
@@ -47,7 +48,7 @@ public class SpringWebReactiveWebClientApplication {
 
       waitForSomeTime();
 
-      getPersons(webClient);
+      proxy.getAll().subscribe(System.out::println);
     };
   }
 
@@ -57,13 +58,6 @@ public class SpringWebReactiveWebClientApplication {
     } catch (final InterruptedException exc) {
       log.error("Shit happens...");
     }
-  }
-
-  private void getPersons(final WebClient webClient) {
-    webClient.get().uri("/person")
-        .exchangeToFlux(personsHandler())
-        .delayElements(Duration.ofMillis(400))
-        .subscribe(person -> log.info("Got {}", person));
   }
 
   private void updateJordan(final WebClient webClient) {
