@@ -63,6 +63,7 @@ public class SpringWebReactiveWebClientApplication {
   private void updateJordan(final WebClient webClient) {
     final var updated = webClient.put()
         .uri("/person")
+        .header(HttpHeaders.AUTHORIZATION, "Basic RnJvZG86QmFnZ2lucw==")
         .contentType(MediaType.APPLICATION_JSON)
         .accept(MediaType.APPLICATION_JSON)
         .bodyValue(new Person(1L, "Michael Jeffrey", "Jordan"))
