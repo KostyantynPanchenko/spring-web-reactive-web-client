@@ -3,6 +3,9 @@ package com.example.web.reactive.client.sandbox;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -20,6 +23,7 @@ public class ReactiveStreams {
     // following code is equivalent to try/catch block which returns hardcoded value
 //    case2TryCatchEquivalent();
 
+    // https://projectreactor.io/docs/core/release/reference/#which.errors
     // just return what already emitted
 //    case3JustReturnWhatAlreadyEmitted();
 
@@ -36,26 +40,15 @@ public class ReactiveStreams {
 
 //    case8HotReactiveStream();
 
-    case9ConnectTwoSubscribers();
+//    case9ConnectTwoSubscribers();
 
-    case10AutoconnectableSubs();
+//    case10AutoconnectableSubs();
 
-    case11ParallelFlux();
-  }
+//    case11ParallelFlux();
 
-  private static void case7() throws InterruptedException {
-    Flux<String> flux =
-        Flux.interval(Duration.ofMillis(250))
-            .name("Clock tick with delay of 250 ms")
-            .map(input -> {
-              if (input < 3) return "tick " + input;
-              throw new RuntimeException("boom");
-            })
-            .onErrorReturn("Uh oh");
+    case12FlatMap();
 
-    flux.subscribe(System.out::println);
-    System.out.println();
-    Thread.sleep(2100);
+    case13UseFunctionsForTransformation();
   }
 
   private static void case2TryCatchEquivalent() {
@@ -100,6 +93,21 @@ public class ReactiveStreams {
             value -> System.out.println("#6 RECEIVED " + value),
             err -> System.out.println(err.getMessage()));
     System.out.println();
+  }
+
+  private static void case7() throws InterruptedException {
+    Flux<String> flux =
+        Flux.interval(Duration.ofMillis(250))
+            .name("Clock tick with delay of 250 ms")
+            .map(input -> {
+              if (input < 3) return "tick " + input;
+              throw new RuntimeException("boom");
+            })
+            .onErrorReturn("Uh oh");
+
+    flux.subscribe(System.out::println);
+    System.out.println();
+    Thread.sleep(2100);
   }
 
   private static void case8HotReactiveStream() {
@@ -173,6 +181,40 @@ public class ReactiveStreams {
 
     System.out.println();
   }
+
+  private static void case12FlatMap() throws InterruptedException {
+    System.out.println("-- #12 print 'Hello World!' letter by letter");
+    Flux.fromIterable(List.of("Hello", " ", "World", "!"))
+        .concatWithValues("\n")
+        .flatMap(word -> Flux.fromStream(word.chars().boxed()))
+        .map(Character::toString)
+        .delayElements(Duration.ofMillis(60))
+        .subscribe(System.out::print);
+    Thread.sleep(1000);
+  }
+
+  private static void case13UseFunctionsForTransformation() {
+    Flux.fromStream(Stream.of("this", "is", "hello", "world"))
+        .startWith("\n")
+        .concatWithValues("\n")
+        .transform(myFunc())
+        .map(item -> {
+          if (item.equals("WORLD ")) {
+            return "WORLD";
+          }
+          if (item.equals("\n ")) {
+            return "\n";
+          }
+          return item;
+        })
+        .doOnComplete(() -> System.out.println("Done processing strings"))
+        .subscribe(System.out::print);
+  }
+
+  private static Function<Flux<String>, Flux<String>> myFunc() {
+    return inputFlux -> inputFlux.map(item -> item + " ").map(String::toUpperCase);
+  }
+
   private static Flux<String> getStringFlux() {
     return Flux.range(1, 5)
         .map(v -> {
